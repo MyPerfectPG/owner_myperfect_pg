@@ -15,6 +15,33 @@ class HotelCard extends StatelessWidget {
     required this.onDelete,
   });
 
+  void _showDeleteConfirmationDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirm Deletion'),
+          content: Text('Are you sure you want to delete this item?'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+            TextButton(
+              child: Text('Delete'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+                onDelete(); // Call the delete callback
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -69,7 +96,9 @@ class HotelCard extends StatelessWidget {
                 IconButton(
                   icon: Icon(Icons.delete_outline_rounded, color: Colors.red),
                   iconSize: 35,
-                  onPressed: onDelete,
+                  onPressed: () {
+                    _showDeleteConfirmationDialog(context);
+                  },
                 ),
               ],
             ),

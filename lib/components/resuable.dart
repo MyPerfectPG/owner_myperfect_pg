@@ -170,7 +170,7 @@ Container Uploadimage(BuildContext context, String title, Function onTap) {
                     height: 15,
                   ),
                   Text(
-                    'Click to upload the file',
+                    'Click to upload the picture',
                     style: TextStyle(fontSize: 15, color: Colors.grey.shade400),
                   ),
                   SizedBox(height: 5,),

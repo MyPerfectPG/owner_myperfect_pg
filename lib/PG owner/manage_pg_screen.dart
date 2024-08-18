@@ -69,7 +69,7 @@ class _ManagePGScreenState extends State<ManagePGScreen> {
             children: snapshot.data!.docs.map((doc) {
               return HotelCard(
                 name: doc['name'],
-                summary: doc['summary'],
+                summary: doc['location'],
                 imageUrls: List<String>.from(doc['images']),
                 onEdit: () {
                   Navigator.push(
