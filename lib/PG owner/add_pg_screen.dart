@@ -20,7 +20,7 @@ class _AddPGScreenState extends State<AddPGScreen> {
   final TextEditingController _landmarkController = TextEditingController();
   final TextEditingController _timeController = TextEditingController();
   final TextEditingController _summaryController = TextEditingController();
-  /*final TextEditingController _priceController = TextEditingController();*/
+  final TextEditingController _billamtcontroller = TextEditingController();
   final TextEditingController _otherServiceController = TextEditingController();
 
   final _storage = FirebaseStorage.instance;
@@ -28,7 +28,7 @@ class _AddPGScreenState extends State<AddPGScreen> {
 
   String _gender = 'Both';
   /*String _fooding = 'Not Included';*/
-  String _elecbill = 'Not Included';
+  String _elecbill = 'Included';
   /*String _foodtype = 'Both';
   String _furnishing = 'Unfurnished';
   String _ac = 'Not Available';*/
@@ -204,13 +204,54 @@ class _AddPGScreenState extends State<AddPGScreen> {
 
   Future<void> uploadMultipleImage(int index) async {
     final List<XFile>? pickedImages = await _picker.pickMultiImage();
+
+    if (pickedImages != null) {
+      List<String> imageUrls = [];
+
+      // Loop through each selected image
+      for (var image in pickedImages) {
+        // Create a reference to the Firebase Storage location
+        Reference storageReference = FirebaseStorage.instance
+            .ref()
+            .child('images/${DateTime.now().millisecondsSinceEpoch}_${image.name}');
+
+        // Upload the file to Firebase Storage
+        UploadTask uploadTask = storageReference.putFile(File(image.path));
+
+        // Wait for the upload to complete
+        TaskSnapshot taskSnapshot = await uploadTask;
+
+        // Get the download URL of the uploaded image
+        String imageUrl = await taskSnapshot.ref.getDownloadURL();
+
+        // Add the download URL to the list
+        imageUrls.add(imageUrl);
+      }
+
+      // Update the state with the URLs
+      setState(() {
+        sharingOptions[index]['images'] = imageUrls;
+      });
+
+      // Optionally: save imageUrls to Firestore
+      // await FirebaseFirestore.instance
+      //     .collection('your_collection_name')
+      //     .doc('your_document_id')
+      //     .update({
+      //   'sharingOptions.$index.images': imageUrls,
+      // });
+    }
+  }
+
+  /*Future<void> uploadMultipleImage(int index) async {
+    final List<XFile>? pickedImages = await _picker.pickMultiImage();
     if (pickedImages != null) {
       setState(() {
         // Add the selected images to the corresponding sharing option's images array
         sharingOptions[index]['images'] = pickedImages.map((image) => image.path).toList();
       });
     }
-  }
+  }*/
 
   /*Future<List<String>> uploadMultipleImage(int index) async {
     final picker = ImagePicker();
@@ -267,6 +308,8 @@ class _AddPGScreenState extends State<AddPGScreen> {
         'elecbill': _elecbill,
         'foodtype': _selectedFoodType,
         /*'furnishing': _furnishing,*/
+        'billAmount':
+        _elecbill == 'Not Included' ? _billamtcontroller.text.trim() : null,
         'sharing_details':sharingOptions,
         'ac': _selectedAC,
         'cctv': _cctv,
@@ -582,6 +625,47 @@ class _AddPGScreenState extends State<AddPGScreen> {
                   'Food Type', ['Veg', 'Non-Veg'], _selectedFoodType),
               _buildCheckboxList(
                   'AC', ['Available', 'Not Available'], _selectedAC),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Electricity Bill',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+              SizedBox(height: 5,),
+              ListTile(
+                  title: const Text('Not Included'),
+                  leading: Radio<String>(
+                    value: 'Not Included',
+                    groupValue: _elecbill,
+                    onChanged: (String? value) {
+                      setState(() {
+                        _elecbill = value!;
+                      });
+                    },
+                  )),
+              ListTile(
+                  title: const Text('Included'),
+                  leading: Radio<String>(
+                    value: 'Included',
+                    groupValue: _elecbill,
+                    onChanged: (String? value) {
+                      setState(() {
+                        _elecbill = value!;
+                      });
+                    },
+                  )),
+              if (_elecbill == 'Not Included')
+                DataTextField(
+                  _billamtcontroller.text,
+                  Icons.money,
+                  false,
+                  _billamtcontroller,
+                ),
+              SizedBox(height: 10,),
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
