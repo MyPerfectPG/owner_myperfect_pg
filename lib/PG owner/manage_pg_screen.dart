@@ -70,7 +70,7 @@ class _ManagePGScreenState extends State<ManagePGScreen> {
               return HotelCard(
                 name: doc['name'],
                 summary: doc['location'],
-                imageUrls: List<String>.from(doc['images']),
+                imageUrls: List<String>.from(doc['thumbnail']),
                 onEdit: () {
                   Navigator.push(
                     context,

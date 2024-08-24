@@ -25,6 +25,9 @@ class _EditPGScreenState extends State<EditPGScreen> {
   final TextEditingController _otherServiceController = TextEditingController();
   final _picker = ImagePicker();
   List<Map<String, dynamic>> sharingOptions=[];
+  List<TextEditingController> vacantBedsControllers = [];
+  List<TextEditingController> priceControllers = [];
+  final Map<int, TextEditingController> _vacantBedsControllers = {};
   String _gender = 'Both';
   String _elecbill = 'Not Included';
   String _cctv = 'Not Available';
@@ -32,11 +35,12 @@ class _EditPGScreenState extends State<EditPGScreen> {
   String _parking = 'Not Available';
   String _laundary = 'Not Available';
   String _profession = 'Student';
-  List<String> _imageUrls = [];
+  List<String> thumbnailimageUrls = [];
   List<File> _newImages = [];
   List<String> _selectedFooding = [];
   List<String> _selectedFoodType = [];
   List<String> _selectedAC = [];
+  List<String> _imageUrls = [];
 
   @override
   void initState() {
@@ -112,7 +116,58 @@ class _EditPGScreenState extends State<EditPGScreen> {
       _parking = doc['parking'];
       _laundary = doc['laundary'];
       _profession = doc['profession'];
-      _imageUrls = List<String>.from(doc['images']);
+      thumbnailimageUrls = List<String>.from(doc['thumbnail']);
+      _imageUrls = List<String>.from(sharingOptions[0]['images']);
+      vacantBedsControllers = sharingOptions.map((option) {
+        return TextEditingController(text: option['vacantBeds']);
+      }).toList();
+      priceControllers = sharingOptions.map((option) {
+        return TextEditingController(text: option['price']);
+      }).toList();
+    });
+  }
+
+  @override
+  void dispose() {
+    vacantBedsControllers.forEach((controller) => controller.dispose());
+    priceControllers.forEach((controller) => controller.dispose());
+    super.dispose();
+  }
+
+
+  Future<void> _addImage(int index) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      File imageFile = File(pickedFile.path);
+
+      // Upload to Firebase Storage
+      String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+      Reference firebaseStorageRef = FirebaseStorage.instance.ref().child('pg_images/$fileName');
+      UploadTask uploadTask = firebaseStorageRef.putFile(imageFile);
+      TaskSnapshot taskSnapshot = await uploadTask;
+      String downloadUrl = await taskSnapshot.ref.getDownloadURL();
+
+      setState(() {
+        sharingOptions[index]['images'].add(downloadUrl);
+      });
+
+      // Update Firestore
+      await FirebaseFirestore.instance.collection('pgs').doc(widget.pgId).update({
+        'sharing_details': sharingOptions,
+      });
+    }
+  }
+
+  Future<void> _deleteImage(int sharingIndex, int imageIndex) async {
+    setState(() {
+      sharingOptions[sharingIndex]['images'].removeAt(imageIndex);
+    });
+
+    // Update Firestore
+    await FirebaseFirestore.instance.collection('pgs').doc(widget.pgId).update({
+      'sharing_details': sharingOptions,
     });
   }
 
@@ -137,19 +192,20 @@ class _EditPGScreenState extends State<EditPGScreen> {
 
         // Replace the old image URL with the new one
         setState(() {
-          _imageUrls[index] = newImageUrl;
+          thumbnailimageUrls[index] = newImageUrl;
         });
 
         // Update Firestore
         await FirebaseFirestore.instance
             .collection('pgs')
             .doc(widget.pgId)
-            .update({'images': _imageUrls});
+            .update({'thumbnail': thumbnailimageUrls});
       } catch (e) {
         print('Error replacing image: $e');
       }
     }
   }
+
 
   Future<void> _updatePG() async {
     try {
@@ -157,7 +213,7 @@ class _EditPGScreenState extends State<EditPGScreen> {
           .collection('pgs')
           .doc(widget.pgId)
           .update({
-        'images': _imageUrls,
+        'thumbnail': thumbnailimageUrls,
         'name': _nameController.text.trim(),
         'landmark': _landmarkController.text.trim(),
         'time': _timeController.text.trim(),
@@ -167,11 +223,12 @@ class _EditPGScreenState extends State<EditPGScreen> {
         'gender': _gender,
         'elecbill': _elecbill,
         'billAmount':
-        _elecbill == 'Included' ? _billamtcontroller.text.trim() : null,
+        _elecbill == 'Included' ? _billamtcontroller.text.trim() : "",
         'cctv': _cctv,
         'wifi': _wifi,
         'ac': _selectedAC,
         'foodtype': _selectedFoodType,
+        'sharing_details':sharingOptions,
         'fooding': _selectedFooding,
         'parking': _parking,
         'laundary': _laundary,
@@ -210,7 +267,7 @@ class _EditPGScreenState extends State<EditPGScreen> {
 
       // Update the state with the URLs
       setState(() {
-        sharingOptions[index]['images'] = imageUrls;
+        sharingOptions[index]['images'].add(imageUrls);
       });
 
       // Optionally: save imageUrls to Firestore
@@ -220,17 +277,6 @@ class _EditPGScreenState extends State<EditPGScreen> {
       //     .update({
       //   'sharingOptions.$index.images': imageUrls,
       // });
-    }
-  }
-  Future<void> _deleteImage(String imageUrl) async {
-    setState(() {
-      _imageUrls.remove(imageUrl);
-    });
-    try {
-      Reference storageRef = FirebaseStorage.instance.refFromURL(imageUrl);
-      await storageRef.delete();
-    } catch (e) {
-      print('Failed to delete image: $e');
     }
   }
 
@@ -258,8 +304,8 @@ class _EditPGScreenState extends State<EditPGScreen> {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               //
               Wrap(
-                children: _imageUrls.map((imageUrl) {
-                  int index = _imageUrls.indexOf(imageUrl);
+                children: thumbnailimageUrls.map((imageUrl) {
+                  int index = thumbnailimageUrls.indexOf(imageUrl);
                   return Stack(
                     children: [
                       Image.network(
@@ -542,24 +588,49 @@ class _EditPGScreenState extends State<EditPGScreen> {
                                 ],
                               ),
                               SizedBox(height: 3),
-                              ElevatedButton.icon(
-                                onPressed: () => uploadMultipleImage(index),
-                                icon: Icon(
-                                  Icons.upload_file,
-                                  color: Colors.white,
-                                ),
-                                label: Text(
-                                  'Upload Images',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Color(0xff0094FF),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 20, vertical: 10),
-                                ),
+                              GridView.builder(
+                                shrinkWrap: true,
+                                itemCount: sharingOptions[index]['images'].length,
+                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3),
+                                itemBuilder: (context, imageIndex) {
+                                  return Stack(
+                                    children: [
+                                      Image.network(sharingOptions[index]['images'][imageIndex]),
+                                      Positioned(
+                                        right: 0,
+                                        child: IconButton(
+                                        icon: Icon(Icons.delete_outline_rounded,color: Colors.red,),
+                                        onPressed: () => _deleteImage(index, imageIndex),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                              SizedBox(height: 8.0),
+                              ElevatedButton(
+                                onPressed: () => _addImage(index),
+                                child: Text('Add Image'),
+                                style: ButtonStyle(
+                                    foregroundColor:
+                                    MaterialStateProperty.resolveWith((states) {
+                                      if (states.contains(MaterialState.pressed)) {
+                                        return Colors.white;
+                                      }
+                                      return Color(0xff0094FF);
+                                    }),
+                                    backgroundColor:
+                                    MaterialStateProperty.resolveWith((states) {
+                                      if (states.contains(MaterialState.pressed)) {
+                                        return Color(0xff0094FF);
+                                      }
+                                      return Colors.white;
+                                    }),
+                                    shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                                        RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(30),
+                                          side: BorderSide(color: Color(0xff0094FF)),
+                                        ))),
                               ),
                               /*SizedBox(height: 16),
                               ElevatedButton.icon(
@@ -817,6 +888,7 @@ class _EditPGScreenState extends State<EditPGScreen> {
                   false,
                   _billamtcontroller,
                 ),
+
               SizedBox(
                 height: 10,
               ),

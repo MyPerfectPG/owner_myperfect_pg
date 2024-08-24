@@ -38,7 +38,7 @@ class _AddPGScreenState extends State<AddPGScreen> {
   String _laundary = 'Not Available';
   String _profession = 'Student';
   List<String> _images = [];
-
+  List<String> thumbnailimagesUrls=[];
   List<String> _selectedFooding = [];
   List<String> _selectedFoodType = [];
   List<String> _selectedAC = [];
@@ -186,15 +186,10 @@ class _AddPGScreenState extends State<AddPGScreen> {
       // Get the download URL of the uploaded image
       String downloadUrl = await snapshot.ref.getDownloadURL();
 
-      // Store the download URL in Firestore
-      await FirebaseFirestore.instance.collection('pg_owners').add({
-        'imageUrl': downloadUrl,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
 
       print('Image uploaded successfully!');
-      imageUrls.add(downloadUrl); // Add the URL to the list
-      return imageUrls; // Return the list of image URLs
+      thumbnailimagesUrls.add(downloadUrl); // Add the URL to the list
+      return thumbnailimagesUrls; // Return the list of image URLs
     } catch (e) {
       print('Error uploading image: $e');
       return []; // Return an empty list in case of error
@@ -309,7 +304,7 @@ class _AddPGScreenState extends State<AddPGScreen> {
         'foodtype': _selectedFoodType,
         /*'furnishing': _furnishing,*/
         'billAmount':
-        _elecbill == 'Not Included' ? _billamtcontroller.text.trim() : null,
+        _elecbill == 'Not Included' ? _billamtcontroller.text.trim() : "",
         'sharing_details':sharingOptions,
         'ac': _selectedAC,
         'cctv': _cctv,
@@ -320,7 +315,7 @@ class _AddPGScreenState extends State<AddPGScreen> {
         'location': _locationController.text.trim(),
         'summary': _summaryController.text.trim(),
         /*'price': int.parse(_priceController.text.trim()),*/
-        'images': imageUrls,
+        'thumbnail': thumbnailimagesUrls,
         'ownerId': uid,
       });
       Navigator.pop(context);

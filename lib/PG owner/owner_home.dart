@@ -166,6 +166,33 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         .snapshots();
   }
 
+  Future<bool> _showSignOutConfirmationDialog(BuildContext context) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Confirm Sign Out'),
+        content: Text('Are you sure you want to sign out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              FirebaseAuth.instance.signOut().then((value) {
+                print('Signed Out');
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => OwnerLoginScreen()),
+                );
+              });
+            },
+            child: Text('Sign Out'),
+          ),
+        ],
+      ),
+    ) ?? false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -184,11 +211,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           IconButton(
             icon: Icon(Icons.logout),
             onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => OwnerLoginScreen()),
-              );
+              bool signOutConfirmed = await _showSignOutConfirmationDialog(context);
+              if (signOutConfirmed) {
+                await FirebaseAuth.instance.signOut();
+                Navigator.popUntil(context, (route) => route.isFirst);
+                // Navigate to the login screen or any initial screen
+              }
             },
           ),
         ],

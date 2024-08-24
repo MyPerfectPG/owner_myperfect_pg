@@ -34,17 +34,17 @@ class _PGSignUpScreenState extends State<PGSignUpScreen> {
           color: Colors.white, fontWeight: FontWeight.bold, fontSize: 30),),backgroundColor: Color(0xff0094FF),foregroundColor: Colors.white,),
       backgroundColor: Color(0xffF7F7F7),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
           children: [
             DataTextField('Name', Icons.person_outline, false, nameController),
-            SizedBox(height: 20,),
+            SizedBox(height: 10,),
             DataTextField('Email ID', Icons.mail_outline_rounded, false, emailController),
-            SizedBox(height: 20,),
+            SizedBox(height: 10,),
             DataTextField('Phone Number', Icons.phone_outlined, false, phoneController),
-            SizedBox(height: 20,),
+            SizedBox(height: 10,),
             DataTextField('Password  (atleast 6 characters)', Icons.shield_outlined, false, pwdController),
-            SizedBox(height: 20,),
+            SizedBox(height: 10,),
             buttonPG(context, 'Signup', Icons.abc,() async {
               try {
                 // Create user in Firebase Authentication
