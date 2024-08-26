@@ -25,7 +25,6 @@ class _AddPGScreenState extends State<AddPGScreen> {
 
   final _storage = FirebaseStorage.instance;
   final _picker = ImagePicker();
-
   String _gender = 'Both';
   /*String _fooding = 'Not Included';*/
   String _elecbill = 'Included';
@@ -42,6 +41,7 @@ class _AddPGScreenState extends State<AddPGScreen> {
   List<String> _selectedFooding = [];
   List<String> _selectedFoodType = [];
   List<String> _selectedAC = [];
+  List<String> OtherimagesUrls=[];
 
   Future<void> _pickImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
@@ -53,7 +53,6 @@ class _AddPGScreenState extends State<AddPGScreen> {
   }
 
   List<String> imageUrls = [];
-  List<String> imageUrls1 = [];
   Widget _buildCheckboxList(
       String title, List<String> options, List<String> selectedOptions) {
     return Column(
@@ -148,12 +147,12 @@ class _AddPGScreenState extends State<AddPGScreen> {
         String downloadUrl = await snapshot.ref.getDownloadURL();
 
         // Store the download URL in a list
-        imageUrls.add(downloadUrl);
+        OtherimagesUrls.add(downloadUrl);
       } catch (e) {
         print('Error uploading image: $e');
       }
     }
-    return imageUrls;
+    return OtherimagesUrls;
     // Store the list of image URLs in Firestore
     await FirebaseFirestore.instance.collection('pg_owners').add({
       'imageUrls': imageUrls,
@@ -162,6 +161,48 @@ class _AddPGScreenState extends State<AddPGScreen> {
 
     print('Images uploaded successfully!');
   }
+  /*Future<List<String>> uploadMultipleImages() async {
+    final picker = ImagePicker();
+    final List<XFile>? images = await picker.pickMultiImage();
+
+    if (images == null || images.isEmpty) {
+      print('No images selected.');
+      // return;
+    }
+
+
+
+    for (XFile image in images!) {
+      File imageFile = File(image.path);
+
+      try {
+        // Create a unique file name for each image
+        String fileName = 'images/${DateTime.now().millisecondsSinceEpoch}_${image.name}';
+
+        // Upload the image to Firebase Storage
+        TaskSnapshot snapshot = await FirebaseStorage.instance
+            .ref(fileName)
+            .putFile(imageFile);
+
+        // Get the download URL of the uploaded image
+        String downloadUrl = await snapshot.ref.getDownloadURL();
+
+        // Store the download URL in a list
+        AllimagesUrls.add(downloadUrl);
+        OtherimagesUrls.add(downloadUrl);
+      } catch (e) {
+        print('Error uploading image: $e');
+      }
+    }
+    return OtherimagesUrls;
+    // Store the list of image URLs in Firestore
+    await FirebaseFirestore.instance.collection('pg_owners').add({
+      'imageUrls': imageUrls,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+
+    print('Images uploaded successfully!');
+  }*/
 
   Future<List<String>> uploadSingleImage() async {
     final picker = ImagePicker();
@@ -316,6 +357,7 @@ class _AddPGScreenState extends State<AddPGScreen> {
         'summary': _summaryController.text.trim(),
         /*'price': int.parse(_priceController.text.trim()),*/
         'thumbnail': thumbnailimagesUrls,
+        'other_pics': OtherimagesUrls,
         'ownerId': uid,
       });
       Navigator.pop(context);
@@ -613,6 +655,42 @@ class _AddPGScreenState extends State<AddPGScreen> {
                   );
                 }).toList(),
               ],
+              SizedBox(height: 10,),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Other Pictures',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+              SizedBox(height: 5,),
+              ElevatedButton(
+                onPressed: () => uploadMultipleImages(),
+                child: Text('Upload Image'),
+                style: ButtonStyle(
+                    foregroundColor:
+                    MaterialStateProperty.resolveWith((states) {
+                      if (states.contains(MaterialState.pressed)) {
+                        return Colors.white;
+                      }
+                      return Color(0xff0094FF);
+                    }),
+                    backgroundColor:
+                    MaterialStateProperty.resolveWith((states) {
+                      if (states.contains(MaterialState.pressed)) {
+                        return Color(0xff0094FF);
+                      }
+                      return Colors.white;
+                    }),
+                    shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          side: BorderSide(color: Color(0xff0094FF)),
+                        ))),
+              ),
               SizedBox(height: 10),
               _buildCheckboxList(
                   'Fooding', ['Included', 'Not Included'], _selectedFooding),

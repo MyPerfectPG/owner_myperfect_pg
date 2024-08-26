@@ -40,6 +40,7 @@ class _EditPGScreenState extends State<EditPGScreen> {
   List<String> _selectedFooding = [];
   List<String> _selectedFoodType = [];
   List<String> _selectedAC = [];
+  List<String> OtherimagesUrls = [];
   List<String> _imageUrls = [];
 
   @override
@@ -117,6 +118,7 @@ class _EditPGScreenState extends State<EditPGScreen> {
       _laundary = doc['laundary'];
       _profession = doc['profession'];
       thumbnailimageUrls = List<String>.from(doc['thumbnail']);
+      OtherimagesUrls = List<String>.from(doc['other_pics']);
       _imageUrls = List<String>.from(sharingOptions[0]['images']);
       vacantBedsControllers = sharingOptions.map((option) {
         return TextEditingController(text: option['vacantBeds']);
@@ -134,6 +136,48 @@ class _EditPGScreenState extends State<EditPGScreen> {
     super.dispose();
   }
 
+
+  Future<List<String>> uploadMultipleImages() async {
+    final picker = ImagePicker();
+    final List<XFile>? images = await picker.pickMultiImage();
+
+    if (images == null || images.isEmpty) {
+      print('No images selected.');
+      // return;
+    }
+
+
+
+    for (XFile image in images!) {
+      File imageFile = File(image.path);
+
+      try {
+        // Create a unique file name for each image
+        String fileName = 'images/${DateTime.now().millisecondsSinceEpoch}_${image.name}';
+
+        // Upload the image to Firebase Storage
+        TaskSnapshot snapshot = await FirebaseStorage.instance
+            .ref(fileName)
+            .putFile(imageFile);
+
+        // Get the download URL of the uploaded image
+        String downloadUrl = await snapshot.ref.getDownloadURL();
+
+        // Store the download URL in a list
+        OtherimagesUrls.add(downloadUrl);
+      } catch (e) {
+        print('Error uploading image: $e');
+      }
+    }
+    return OtherimagesUrls;
+    // Store the list of image URLs in Firestore
+    /*await FirebaseFirestore.instance.collection('pg_owners').add({
+      'imageUrls': imageUrls,
+      'timestamp': FieldValue.serverTimestamp(),
+    });*/
+
+    print('Images uploaded successfully!');
+  }
 
   Future<void> _addImage(int index) async {
     final picker = ImagePicker();
@@ -168,6 +212,17 @@ class _EditPGScreenState extends State<EditPGScreen> {
     // Update Firestore
     await FirebaseFirestore.instance.collection('pgs').doc(widget.pgId).update({
       'sharing_details': sharingOptions,
+    });
+  }
+
+  Future<void> _deleteImages( int imageIndex) async {
+    setState(() {
+      OtherimagesUrls.removeAt(imageIndex);
+    });
+
+    // Update Firestore
+    await FirebaseFirestore.instance.collection('pgs').doc(widget.pgId).update({
+      'other_pics': OtherimagesUrls,
     });
   }
 
@@ -227,6 +282,7 @@ class _EditPGScreenState extends State<EditPGScreen> {
         'cctv': _cctv,
         'wifi': _wifi,
         'ac': _selectedAC,
+        'other_pics':OtherimagesUrls,
         'foodtype': _selectedFoodType,
         'sharing_details':sharingOptions,
         'fooding': _selectedFooding,
@@ -653,6 +709,67 @@ class _EditPGScreenState extends State<EditPGScreen> {
                   );
                 }).toList(),
               ],
+              SizedBox(height: 10),
+              SizedBox(
+                height: 10,
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Other Images',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: 5,
+              ),
+              GridView.builder(
+                shrinkWrap: true,
+                itemCount: OtherimagesUrls.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3),
+                itemBuilder: (context, imageIndex) {
+                  return Stack(
+                    children: [
+                      Image.network(OtherimagesUrls[imageIndex]),
+                      Positioned(
+                        right: 0,
+                        child: IconButton(
+                          icon: Icon(Icons.delete_outline_rounded,color: Colors.red,),
+                          onPressed: () => _deleteImages(imageIndex),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+              SizedBox(height: 8.0),
+              ElevatedButton(
+                onPressed: () => uploadMultipleImages(),
+                child: Text('Add Image'),
+                style: ButtonStyle(
+                    foregroundColor:
+                    MaterialStateProperty.resolveWith((states) {
+                      if (states.contains(MaterialState.pressed)) {
+                        return Colors.white;
+                      }
+                      return Color(0xff0094FF);
+                    }),
+                    backgroundColor:
+                    MaterialStateProperty.resolveWith((states) {
+                      if (states.contains(MaterialState.pressed)) {
+                        return Color(0xff0094FF);
+                      }
+                      return Colors.white;
+                    }),
+                    shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          side: BorderSide(color: Color(0xff0094FF)),
+                        ))),
+              ),
               SizedBox(height: 10),
               _buildCheckboxList(
                   'Fooding', ['Included', 'Not Included'], _selectedFooding),
