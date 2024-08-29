@@ -42,6 +42,7 @@ class _AddPGScreenState extends State<AddPGScreen> {
   List<String> _selectedFoodType = [];
   List<String> _selectedAC = [];
   List<String> OtherimagesUrls=[];
+  bool _isThumbnailUploaded = false;
 
   Future<void> _pickImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
@@ -230,6 +231,7 @@ class _AddPGScreenState extends State<AddPGScreen> {
 
       print('Image uploaded successfully!');
       thumbnailimagesUrls.add(downloadUrl); // Add the URL to the list
+      _isThumbnailUploaded = true;
       return thumbnailimagesUrls; // Return the list of image URLs
     } catch (e) {
       print('Error uploading image: $e');
@@ -332,6 +334,12 @@ class _AddPGScreenState extends State<AddPGScreen> {
   }
 
   Future<void> _addPG() async {
+    if (thumbnailimagesUrls.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please upload a thumbnail image before adding the PG.')),
+      );
+      return; // Exit the function if the thumbnail is not uploaded
+    }
     try {
       CollectionReference pgs = FirebaseFirestore.instance.collection('pgs');
       await pgs.add({

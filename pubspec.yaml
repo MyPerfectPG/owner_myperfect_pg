@@ -25,11 +25,12 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-flutter_launcher_icons:
-  android: "launcher_icon"
+flutter_icons:
+  android: true
   ios: true
-  image_path: "assets/images/Artboard_10-removebg.png"
-  icon_size: 200
+  image_path: "assets/images/logo1.jpg"
+  adaptive_icon_background: "#0094FF"
+  adaptive_icon_foreground: "assets/images/logo_foreground.png"
 
   flutter_lints: ^3.0.0
 
@@ -39,34 +40,3 @@ flutter:
 
   assets:
     - assets/images/
-
-  
-  
-  
-  
-
-  
-  
-
-  
-  
-
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  

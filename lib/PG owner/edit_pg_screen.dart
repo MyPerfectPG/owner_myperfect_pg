@@ -261,6 +261,44 @@ class _EditPGScreenState extends State<EditPGScreen> {
     }
   }
 
+  Future<void> _confirmDelete(BuildContext context, int index, bool isOtherImage, [int? imageIndex]) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // User must tap button to close
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirm Delete'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('Are you sure you want to delete this image?'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Delete'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                if (isOtherImage) {
+                  _deleteImages(imageIndex!);
+                } else {
+                  _deleteImage(index, imageIndex!);
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
   Future<void> _updatePG() async {
     try {
@@ -655,9 +693,13 @@ class _EditPGScreenState extends State<EditPGScreen> {
                                       Positioned(
                                         right: 0,
                                         child: IconButton(
+                                          icon: Icon(Icons.delete_outline_rounded, color: Colors.red),
+                                          onPressed: () => _confirmDelete(context, index, false, imageIndex),
+                                        ),/*IconButton(
                                         icon: Icon(Icons.delete_outline_rounded,color: Colors.red,),
                                         onPressed: () => _deleteImage(index, imageIndex),
-                                        ),
+                                        ),*/
+
                                       ),
                                     ],
                                   );
@@ -737,9 +779,12 @@ class _EditPGScreenState extends State<EditPGScreen> {
                       Positioned(
                         right: 0,
                         child: IconButton(
+                          icon: Icon(Icons.delete_outline_rounded, color: Colors.red),
+                          onPressed: () => _confirmDelete(context, -1, true, imageIndex),
+                        ),/*IconButton(
                           icon: Icon(Icons.delete_outline_rounded,color: Colors.red,),
                           onPressed: () => _deleteImages(imageIndex),
-                        ),
+                        ),*/
                       ),
                     ],
                   );
